@@ -14,17 +14,17 @@ order corrects for imbalances due to both starting position and initiative.
 import itertools
 import random
 import warnings
-
+from multiprocessing import Pool
 from collections import namedtuple
 
 from isolation import Board
-from sample_players import (RandomPlayer, open_move_score,
+from sample_players import (RandomPlayer, GreedyPlayer, open_move_score,
                             improved_score, center_score)
 from game_agent import (MinimaxPlayer, AlphaBetaPlayer, custom_score,
                         custom_score_2, custom_score_3)
 
-NUM_MATCHES = 5  # number of matches against each opponent
-TIME_LIMIT = 150  # number of milliseconds before timeout
+NUM_MATCHES = 20  # number of matches against each opponent
+TIME_LIMIT = 50  # number of milliseconds before timeout
 
 DESCRIPTION = """
 This script evaluates the performance of the custom_score evaluation
@@ -44,6 +44,7 @@ def play_round(cpu_agent, test_agents, win_counts, num_matches):
     play as both first and second player to control for advantages resulting
     from choosing better opening moves or having first initiative to move.
     """
+    pool = Pool(4)
     timeout_count = 0
     forfeit_count = 0
     for _ in range(num_matches):
@@ -57,7 +58,6 @@ def play_round(cpu_agent, test_agents, win_counts, num_matches):
             move = random.choice(games[0].get_legal_moves())
             for game in games:
                 game.apply_move(move)
-
         # play all games and tally the results
         for game in games:
             winner, _, termination = game.play(time_limit=TIME_LIMIT)
@@ -85,7 +85,7 @@ def play_matches(cpu_agents, test_agents, num_matches):
     total_matches = 2 * num_matches * len(cpu_agents)
 
     print("\n{:^9}{:^13}".format("Match #", "Opponent") + ''.join(['{:^13}'.format(x[1].name) for x in enumerate(test_agents)]))
-    print("{:^9}{:^13} ".format("", "") +  ' '.join(['{:^5}| {:^5}'.format("Won", "Lost") for x in enumerate(test_agents)]))
+    print("{:^9}{:^13} ".format("", "") + ' '.join(['{:^5}| {:^5}'.format("Won", "Lost") for x in enumerate(test_agents)]))
 
     for idx, agent in enumerate(cpu_agents):
         wins = {key: 0 for (key, value) in test_agents}
@@ -102,7 +102,7 @@ def play_matches(cpu_agents, test_agents, num_matches):
                             for agent in test_agents], [])
         print(' ' + ' '.join([
             '{:^5}| {:^5}'.format(
-                round_totals[i],round_totals[i+1]
+                round_totals[i], round_totals[i+1]
             ) for i in range(0, len(round_totals), 2)
         ]))
 
@@ -145,7 +145,17 @@ def main():
         Agent(AlphaBetaPlayer(score_fn=center_score), "AB_Center"),
         Agent(AlphaBetaPlayer(score_fn=improved_score), "AB_Improved")
     ]
+    # test_agents = [
+    #     Agent(AlphaBetaPlayer(score_fn=custom_score), "AB_Custom"),
+    # ]
 
+    # # Define a collection of agents to compete against the test agents
+    # cpu_agents = [
+    #     Agent(MinimaxPlayer(score_fn=improved_score), "MM_Improved"),
+    #     Agent(AlphaBetaPlayer(score_fn=open_move_score), "AB_Open"),
+    #     Agent(AlphaBetaPlayer(score_fn=center_score), "AB_Center"),
+    #     Agent(AlphaBetaPlayer(score_fn=improved_score), "AB_Improved")
+    # ]
     print(DESCRIPTION)
     print("{:^74}".format("*************************"))
     print("{:^74}".format("Playing Matches"))
